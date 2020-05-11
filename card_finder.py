@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sat Apr  4 21:06:41 2020
 
@@ -10,6 +9,7 @@ from queue import Queue
 from itertools import combinations
 import numpy as np
 from matplotlib import pyplot as plt
+
 
 
 
@@ -48,7 +48,7 @@ def select_object(img,position:tuple,value=None)->np.array:
       
         if img[y,x] !=value or dst[y,x]==1: 
             
-            return
+            return None
 
         dst[y,x]+=1;
         object_info['size']+=1;
@@ -134,6 +134,7 @@ def line_transform(img,size:tuple)->np.array:
                 real_r=x*math.cos(real_alfa)+y*math.sin(real_alfa)
                 r=(real_r/math.sqrt(w**2 + h**2))*r_size/2
                 dst[int(alfa),int(r+r_size/2)]+=1
+    dst=(dst*(255/np.max(dst))).astype(np.uint8)
     return dst
 
 def get_lines(line_img, line_count:int, threshold: int,dst_size)->list:
@@ -144,7 +145,7 @@ def get_lines(line_img, line_count:int, threshold: int,dst_size)->list:
     
     while len(point_obj)<line_count:
         lines_bin=thresh(line_img,threshold)
-        #lines_bin=operation(lines_bin,get_circle(2),"dilate")
+        lines_bin=operation(lines_bin,get_circle(2),"dilate")
         point_obj=filter_object(lines_bin,0)
         point_obj=sorted(point_obj,key=lambda i:i['size'],reverse=True)[:line_count]
         print(f"thresholded with {threshold}")
@@ -163,6 +164,12 @@ def get_lines(line_img, line_count:int, threshold: int,dst_size)->list:
     result={"ar":points_ar,"ab":points_ab}    
     show(lines_bin,'Maksima')
     return result;
+
+def polygon_area(points):
+    temp=np.array(points)
+    x=temp[:,0]
+    y=temp[:,1]
+    return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
 def get_circle(radius):
     """Funkcja zwraca element strukturalny w kształcie koła o danym promieniu"""
@@ -214,6 +221,30 @@ def thresh(img, min_value=None, max_value=None):
         return np.clip((img<=max_value)*img,0,1)
     if max_value==None:
         return np.clip((img>=min_value)*img,0,1)
+def find_thresh_otsu(img):
+    cnt, pix =np.histogram(img, np.array(range(257)))
+    pix=pix[:-1]
+    plt.bar(pix,cnt, align='center')
+
+    thresh_values=[]
+    intensity_arr = np.arange(256)
+    mean_weigth = 1.0/(img.shape[0]*img.shape[1])
+    for t in pix[1:]: # This goes from 1 to 254 uint8 range (Pretty sure wont be those values)
+        pcb = np.sum(cnt[:t])
+        pcf = np.sum(cnt[t:])
+        Wb = pcb * mean_weigth
+        Wf = pcf * mean_weigth
+
+        mub = np.sum(intensity_arr[:t]*cnt[:t]) / float(pcb)
+        muf = np.sum(intensity_arr[t:]*cnt[t:]) / float(pcf)
+        value = Wb * Wf * (mub - muf) ** 2
+
+        #print("Wb", Wb, "Wf", Wf)
+        #print("t", t, "value", value)
+        thresh_values.append(value)
+    
+    thresh_values=np.nan_to_num(thresh_values);
+    return np.argmax(thresh_values) 
 
 def find_corners(list_ab):
     """funkcja wyszukuje narożniki kart mając dane współczynniki a i b 4 prostych i
@@ -246,7 +277,7 @@ def find_corners(list_ab):
     
     return intersections
 
-def show(img,descr):
+def show(img,descr='plot'):
     plt.figure(figsize=(20,10))
     plt.title(descr)
     if len(img.shape)==3:
@@ -254,6 +285,7 @@ def show(img,descr):
        pass
     plt.imshow(img,'gray')
     plt.show()
+
     
 def sort_lines(intersections):
     """funkcja znając narożniki karty zwraca proste zawierające boki w odpowiedniej

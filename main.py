@@ -4,17 +4,24 @@ import numpy as np
 from timeit import default_timer as timer
 import card_finder as cf
 import math
+import matplotlib.pyplot as plt
  # %% WCZYTANIE OBRAZU
 print("Start")
 start_p=timer()
-plik='013_blur.jpg'#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<WYBÓR PLIKU
-img_full = cv.imread(plik,0)
+plik='013_gradient.jpg'#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<WYBÓR PLIKU
+img_full = cv.imread(plik)
+img
 # 013.jpg, 013_blur.jpg, 013_gradient.jpg 013_salt.jpg
 img_full_color=cv.imread(plik,1)
 scale= 24 ## zmniejszenie rozmiaru pikseli
 newX,newY = img_full.shape[1]/scale, img_full.shape[0]/scale
 img = cv.resize(img_full,(int(newX),int(newY)))
 cf.show(img,"obraz wejsciowy")
+
+
+    
+
+
 
 # %% ZNAJDOWANIE KART
 
